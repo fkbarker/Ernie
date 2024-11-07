@@ -1,0 +1,214 @@
+---
+title: 'DATA5002 Week 5 Lab'
+subtitle: 'Big-ish data, Geospatial data, Visual statistical inference' 
+date: "21 October 2024"
+output:
+  html_notebook: default
+---
+
+# Instructions
+
+The purpose of this lab is to practice improving the visual aesthetics of your plots and using them to tell a story. This lab is more open-ended than others, so please experiment.
+
+You will require the following packages, though others may also be helpful.
+
+* `rmarkdown`
+* `tidyverse`
+* `sf`
+* `cartogram`
+* `spatial`
+* `nullabor`
+
+Running the following script will install them if not already installed:
+
+```{r install, eval=FALSE}
+required_packages <- c("rmarkdown", "tidyverse", "sf", 
+                       "cartogram", "spatial", "nullabor")
+# installed.packages() is a data frame with info about 
+# versions and other things we don't need.
+installed_packages <- rownames(installed.packages()) 
+# Which ones are required but not installed?
+to_install <- setdiff(required_packages, installed_packages)
+# Install them.
+install.packages(to_install) 
+```
+
+Please work through the following exercises. As before, the "Hints" tab will contain the list of functions and elements that I would use.
+
+# Exercises
+
+## Part 1: Dealing with multiple dimensions
+
+Consider the dataset `decathlon1988.csv` from the course web site. It contains results of 33 athletes at the 1988 Olympics in each of the ten decathlon sports: 
+  
+* 100-metre dash (seconds, lower = better)
+* long jump (metres, higher = better)
+* shot put (metres, higher = better)
+* high jump (metres, higher = better)
+* 400-metre dash (seconds, lower = better)
+* 110-metre hurdles (seconds, lower = better)
+* discus throw (metres, higher = better)
+* pole vault (metres, higher = better)
+* javelin throw (metres, higher = better)
+* 1500-metre run (seconds, lower = better)
+
+  
+#### **(a)**
+  
+Make a correlation plot of the sports performances. What are the biggest positive correlations in the data? What are the biggest negative ones? Why does this make sense substantively?
+  
+
+
+
+#### **(b)**
+
+Perform a principal component analysis (PCA) of the dataset. How many components make sense? Produce an appropriate plot to help you.
+
+  
+  
+#### **(c)**
+  
+Make a biplot of the first two principal components. Based on it, which of the sports are likely to involve related abilities?
+  
+
+
+
+## Part 2: Dealing with tall(-ish) data
+
+
+Recall the NBA dataset from last week. On the course web site, you will find the following files:
+
+#### `game_summaries.csv`
+
+
+Each game is between a home team (based in the city in which the game is played) and an away (visitor) team. This table gives the names of the home and away team, the season, the date, the points scored by the home and the away teams, and whether the home team won.
+
+
+#### **(a)**
+
+
+
+
+#### **(b)**
+
+
+## Part 3: Geospatial data
+```{r}
+library(here)
+library(tidyverse)
+library(sf)
+vic_lga_profiles <- read_csv(here("data","vic_lga_profiles.csv"))
+vic_lga_shapes   <- st_read(here("data","vic_lga_shapes.shp"))
+```
+The following exercise is based on notes of James Baglin.
+
+Uploaded, you will find two files:
+
+#### `vic_lga_profiles.csv`
+
+Some demographic and health data about Local Government Areas (LGAs) in Victoria.
+
+```{r}
+vic_lga_profiles
+```
+
+#### `vic_lga_shapes.zip`
+
+```{r}
+vic_lga_shapes
+```
+
+A collection of *shapefiles* giving the boundaries of each LGA and some additional information. You need to extract them into your working directory.
+
+**Note:** I would have liked to use NSW's here, but it turns out to be quite a bit more challenging to visualise.
+
+### {.tabset}
+
+#### **(a)**
+
+Work through the following code, printing the intermediate results as you do.
+Note that this exercise provides all the code for you, but you should still make sure you understand each piece of code.
+
+Load libraries:
+```{r}
+library(tidyverse)
+library(sf) # Spatial utilities package
+```
+
+Unpack the zip file, and load the data files:
+```{r eval=FALSE}
+# Your paths may be different
+vic_lga_profiles <- read_csv("vic_lga_profiles.csv")
+vic_lga_shapes   <- sf::st_read("vic_lga_shapes.shp") # from sf package
+```
+
+Join the two datasets:
+```{r}
+lga_data <- left_join(vic_lga_shapes, vic_lga_profiles, by = "lga_name")
+```
+
+Now, make the initial plot. 
+
+Notice that `geom_sf()` largely automates the plotting: 
+```{r}
+p1 <- ggplot(lga_data, aes(fill = notifications_per_1_000_people_of_pertussis)) + 
+   geom_sf(color = "black", size = 0.25)
+print(p1)
+```
+
+Now, let's try a nicer-looking plot: remove the grid and use a warmer colour scheme:
+```{r}
+p1 +
+  scale_fill_distiller(name = "Cases \n per 1,000",
+                       guide = "legend",
+                       palette = "YlOrRd", direction = 1) +
+  theme_minimal() + theme(axis.title.x = element_blank(),
+                          axis.title.y = element_blank(),
+                          axis.text.x  = element_blank(),
+                          axis.text.y  = element_blank(),
+                          panel.grid  = element_blank()) + 
+  labs(title = "Victorian LGA Pertussis Cases - 2011")
+```
+
+### {.tabset}
+
+#### **(b)**
+
+Now, let's make a cartogram, resizing each region by its population.
+
+Load the package:
+```{r}
+library(cartogram)
+```
+
+Deform the shapes to match the areas. There is no single unique way to do it, so an iterative optimisation is used. The `sf_transform()` is necessary because `cartogram_cont()` needs to work not with the raw latitude and longitude but with the map already projected onto a plane. Code 3857 corresponds to the Mercator projection, which should be fine in this case.
+```{r}
+lga_data_cont <- lga_data %>%
+  st_transform(3857) %>%
+  cartogram_cont("erp_2010_total")
+```
+
+Now, remake the plot.
+```{r}
+ggplot(lga_data_cont, aes(fill = notifications_per_1_000_people_of_pertussis)) + 
+  geom_sf(color = "black", size = 0.25) +
+  scale_fill_distiller(name = "Cases \n per 1,000",
+                       guide = "legend",
+                       palette = "YlOrRd", direction = 1) +
+  theme_minimal() + theme(axis.title.x = element_blank(),
+                          axis.title.y = element_blank(),
+                          axis.text.x  = element_blank(),
+                          axis.text.y  = element_blank(),
+                          panel.grid   = element_blank()) + 
+  labs(title = "Victorian LGA Pertussis Cases - 2011",
+       subtitle = "Areas have been scaled to their populations")
+```
+<!-- END HINT -->
+
+## Part 4: Visual Statistical Inference
+
+
+#### **(a)**
+
+
+

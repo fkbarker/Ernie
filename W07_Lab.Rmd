@@ -1,0 +1,183 @@
+---
+title: "DATA5002 Week 7 Lab"
+subtitle: "Interactive visualisation"
+date: "29 October 2024"
+output:
+  html_notebook: default
+---
+
+# Instructions
+
+The purpose of this lab is to practice creating and customising JavaScript-based interactive visualisations.
+
+You will require the following packages, though others may also be helpful.
+
+* `rmarkdown`
+* `tidyverse`
+* `plotly`
+* `crosstalk`
+* `ggiraph`
+
+Running the following script will install them if not already installed:
+
+```{r eval=FALSE}
+required_packages <- c("rmarkdown", "tidyverse", 
+                       "plotly", "crosstalk", "ggiraph")
+# installed.packages() is a data frame with info about 
+# versions and other things we don't need.
+installed_packages <- rownames(installed.packages()) 
+# Which ones are required but not installed?
+to_install <- setdiff(required_packages, installed_packages)
+# Install them.
+install.packages(to_install) 
+library(magrittr) # needs to be run every time you start R and want to use %>%
+library(dplyr) 
+library(ggplot2)
+library(plotly)
+```
+
+Please work through the following exercises. As before, the "Hints" tab will contain the list of functions and elements that I would use.
+
+# Exercises
+
+## Part 1: Using `ggplotly()`
+
+
+#### **(a)**
+```{r}
+
+
+
+```
+
+
+
+#### **(b)**
+```{r}
+scoring_rate <- read.csv("scoring_rate.csv")
+p <- scoring_rate %>% ggplot(aes(x=Minutes, y=Scored/Minutes))+ geom_point(size=0.3) + labs(x="Player minutes",y="scored per minute")
+
+p
+ggplotly(p,tooltip="text")
+
+```
+## Part 2: Using `plot_ly()`
+
+
+#### **(a)**
+```{r}
+
+
+plot_ly(scoring_rate,x=~Minutes, y=~Scored/Minutes,type="scatter")
+
+plot_ly(scoring_rate,x=~Minutes, y=~Scored/Minutes,type="scatter") %>% add_markers( )
+for (i in 1:nrow(scoring_rate)){
+if (scoring_rate[i,1]>=2010) {  
+scoring_rate[i,5] <- 2010 }else {scoring_rate[i,5] <- 2000}
+  i=i+1
+}
+
+# To make code more readable, plotly imports the pipe operator from magrittr
+economics %>% plot_ly(x = ~date, y = ~unemploy/pop) %>% add_lines()
+
+# Attributes defined via plot_ly() set 'global' attributes that 
+# are carried onto subsequent traces, but those may be over-written
+plot_ly(economics, x = ~date, color = I("black")) %>%
+ add_lines(y = ~uempmed) %>%
+ add_lines(y = ~psavert, color = I("red"))
+
+
+
+```
+
+
+
+
+#### **(b)**
+
+```{r}
+
+
+
+```
+
+
+## Part 3: Dashboard
+
+
+#### **(a)**
+
+```{r}
+
+
+
+```
+
+
+
+### Part 4: Crosstalk
+
+```{r}
+
+
+
+```
+
+#### **(a)**
+
+```{r}
+
+
+
+```
+
+
+## Part 5: ggiraph
+
+Note: some of the more powerful features of `ggiraph` work best when incorporated into a shiny app.
+```{r}
+
+
+
+```
+
+
+#### **(a)**
+
+```{r}
+
+
+
+```
+
+
+
+
+## Part 6: Combining plots (Optional)
+
+```{r}
+
+
+
+```
+
+#### **(a)**
+
+```{r}
+
+
+
+```
+
+
+
+#### **(b)**
+
+```{r}
+
+
+
+```
+
+
+
